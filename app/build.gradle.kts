@@ -76,6 +76,9 @@ dependencies {
     // VIEW MODEL
     implementation ("androidx.activity:activity-ktx:1.8.2")
 
+    // ICONS
+    implementation("androidx.compose.material:material-icons-extended")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

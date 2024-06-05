@@ -1,6 +1,12 @@
 package com.estholon.jorgegimeno.ui.screens.auth
 
+import android.app.Activity
+import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultRegistryOwner
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollable
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +57,13 @@ import androidx.navigation.NavHostController
 import com.estholon.jorgegimeno.R
 import com.estholon.jorgegimeno.ui.navigation.Routes
 import com.estholon.jorgegimeno.ui.screens.components.NavLink
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun SignInScreen(
@@ -58,6 +72,24 @@ fun SignInScreen(
 ){
 
     val context = LocalContext.current
+    val activity = LocalContext.current as Activity
+    val callbackManager = CallbackManager.Factory.create()
+    val googleLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if(result.resultCode== Activity.RESULT_OK){
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    val account = task.getResult(ApiException::class.java)!!
+                    signInViewModel.signInWithGoogle(
+                        idToken = account.idToken!!,
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                        communicateError = {message -> Toast.makeText(context,message,Toast.LENGTH_LONG).show()})
+                } catch (e: ApiException){
+                    Toast.makeText(context,
+                        context.getString(R.string.google_error, e.message),Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
 
     Box(
         modifier = Modifier
@@ -116,6 +148,33 @@ fun SignInScreen(
                     signInViewModel = signInViewModel
                 )
             }
+
+            // Facebook
+
+            LoginManager.getInstance()
+                .registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+                    override fun onCancel() {
+                        Toast.makeText(context,
+                            context.getString(R.string.facebook_message),Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onError(error: FacebookException) {
+                        Toast.makeText(context,
+                            context.getString(R.string.facebook_error, error.message),Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onSuccess(result: LoginResult) {
+                        signInViewModel.signInWithFacebook(
+                            result.accessToken,
+                            navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                            communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                        )
+                    }
+
+                })
+
+            // Facebook End
+
             OtherMethods(
                 onAnonymously = {
                     signInViewModel.signInAnonymously(
@@ -123,14 +182,59 @@ fun SignInScreen(
                         communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
                     )
                 },
-                onGoogleSignIn = { /*TODO*/ },
-                onFacebookSignIn = { /*TODO*/ },
-                onGitHubSignIn = { /*TODO*/ },
-                onMicrosoftSignIn = { /*TODO*/ },
-                onTwitterSignIn = { /*TODO*/ }) {
-            }
+                onGoogleSignIn = {
+                    signInViewModel.onGoogleSignInSelected{
+                        googleLauncher.launch(it.signInIntent)
+                    }
+                },
+                onFacebookSignIn = {
+                    LoginManager.getInstance()
+                        .logInWithReadPermissions(context as ActivityResultRegistryOwner, callbackManager, listOf("email", "public_profile"))
+                },
+                onGitHubSignIn = {
+
+                    signInViewModel.onOathLoginSelected(
+                        oath = OathLogin.GitHub,
+                        activity = activity,
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                        communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                    )
+                },
+                onMicrosoftSignIn = {
+
+                    signInViewModel.onOathLoginSelected(
+                        oath = OathLogin.Microsoft,
+                        activity = activity,
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                        communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                    )
+                },
+                onTwitterSignIn = {
+                    signInViewModel.onOathLoginSelected(
+                        oath = OathLogin.Twitter,
+                        activity = activity,
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                        communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                    )
+                },
+                onYahooSignIn = {
+                    signInViewModel.onOathLoginSelected(
+                        oath = OathLogin.Yahoo,
+                        activity = activity,
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route)},
+                        communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                    )
+                }
+            )
             Spacer(modifier = Modifier.height(50.dp))
 
+        }
+    }
+    if(signInViewModel.isLoading){
+        Box(modifier = Modifier.fillMaxSize()){
+            CircularProgressIndicator(modifier = Modifier
+                .size(100.dp)
+                .align(Alignment.Center))
         }
     }
 }

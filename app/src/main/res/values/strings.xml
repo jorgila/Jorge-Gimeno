@@ -9,4 +9,5 @@
     <string name="user_has_to_be_an_email">User has to be an email</string>
     <string name="password_forgotten">I\'ve forgotten the password</string>
     <string name="recover">Recover</string>
+    <string name="default_web_client_id">368918440441-mh4goaod3q5i741ai1l23vpvfm4eur2s.apps.googleusercontent.com</string>
 </resources>

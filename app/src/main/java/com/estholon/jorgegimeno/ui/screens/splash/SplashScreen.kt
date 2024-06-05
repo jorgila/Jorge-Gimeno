@@ -46,7 +46,7 @@ fun SplashScreen(
         modifier = Modifier.fillMaxSize(),
     ){
         Image(
-            painter = painterResource(id = R.drawable.img_fondo1),
+            painter = painterResource(id = R.drawable.img_background),
             contentDescription = "Jorge Gimeno",
             modifier = Modifier.fillMaxSize()
         )

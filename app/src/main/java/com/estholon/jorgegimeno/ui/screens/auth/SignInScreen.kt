@@ -56,6 +56,9 @@ fun SignInScreen(
     navController: NavHostController,
     signInViewModel: SignInViewModel = hiltViewModel()
 ){
+
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -114,7 +117,12 @@ fun SignInScreen(
                 )
             }
             OtherMethods(
-                onAnonymously = { /*TODO*/ },
+                onAnonymously = {
+                    signInViewModel.signInAnonymously(
+                        navigateToHome = { navController.navigate(Routes.MainScreen.route) },
+                        communicateError = { Toast.makeText(context,signInViewModel.message,Toast.LENGTH_LONG).show() }
+                    )
+                },
                 onGoogleSignIn = { /*TODO*/ },
                 onFacebookSignIn = { /*TODO*/ },
                 onGitHubSignIn = { /*TODO*/ },
